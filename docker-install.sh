@@ -16,6 +16,21 @@ print_status() {
     fi
 }
 
+# Function to check if Docker is already configured for rootless mode
+check_rootless_mode() {
+    if [[ -S $XDG_RUNTIME_DIR/docker.sock ]]; then
+        echo -e "\e[33m[SKIP]\e[0m Docker is already configured for rootless mode."
+        return 0
+    fi
+
+    if [[ -S /var/run/docker.sock ]]; then
+        echo -e "\e[31m[ERROR]\e[0m Rootful Docker (/var/run/docker.sock) is running and accessible."
+        log_error "Aborting because rootful Docker is running. Use --force to ignore."
+    fi
+
+    return 1
+}
+
 # Update and install prerequisites
 echo "Updating package database and installing prerequisites..."
 sudo apt-get update || log_error "Failed to update package database."
@@ -45,11 +60,13 @@ echo "Installing Docker components..."
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || log_error "Failed to install Docker components."
 print_status $? "Docker components installed successfully."
 
-# Configure Docker for rootless mode
+# Check and configure Docker for rootless mode
 echo "Configuring Docker for rootless mode..."
-sudo apt-get install -y uidmap || log_error "Failed to install uidmap for rootless mode."
-dockerd-rootless-setuptool.sh install || log_error "Failed to configure Docker rootless mode."
-print_status $? "Docker configured for rootless mode."
+check_rootless_mode
+if [ $? -eq 1 ]; then
+    dockerd-rootless-setuptool.sh install || log_error "Failed to configure Docker rootless mode."
+    print_status $? "Docker configured for rootless mode."
+fi
 
 # Add the current user to the "docker" group
 echo "Adding the current user to the 'docker' group..."
