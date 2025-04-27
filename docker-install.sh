@@ -16,6 +16,19 @@ print_status() {
     fi
 }
 
+# Step 0: Stop any existing Docker services
+echo "Stopping any existing Docker services..."
+sudo systemctl stop docker docker.socket containerd || true
+sudo systemctl disable docker docker.socket containerd || true
+print_status $? "Stopped and disabled existing Docker services."
+
+# Step 0.1: Remove any existing Docker installations
+echo "Removing any existing Docker installations..."
+sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || true
+sudo rm -rf /var/lib/docker /etc/docker || true
+sudo rm -rf ~/.docker || true
+print_status $? "Removed existing Docker installations and cleaned up configuration."
+
 # Function to check if Docker is already configured for rootless mode
 check_rootless_mode() {
     if [[ -S $XDG_RUNTIME_DIR/docker.sock ]]; then
