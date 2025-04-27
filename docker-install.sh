@@ -16,6 +16,21 @@ print_status() {
     fi
 }
 
+# Check if the current user is already in the "docker" group
+echo "Checking if the current user is in the 'docker' group..."
+if groups $USER | grep -q "\bdocker\b"; then
+    print_status 0 "User is already in the 'docker' group. Continuing..."
+else
+    echo "Adding the current user to the 'docker' group..."
+    sudo usermod -aG docker $USER || log_error "Failed to add user to the Docker group."
+    print_status $? "User added to the 'docker' group successfully."
+    echo -e "\e[33m[INFO]\e[0m Please log out and log back in to apply group changes."
+    echo -e "\e[33m[INFO]\e[0m Use the following commands to log out and restart the script:"
+    echo -e "\e[33m[INFO]\e[0m 1. Log out: \`logout\`"
+    echo -e "\e[33m[INFO]\e[0m 2. Log back in and restart the script: \`./install_docker_rootless.sh\`"
+    exit 0
+fi
+
 # Step 0: Stop any existing Docker services
 echo "Stopping any existing Docker services..."
 sudo systemctl stop docker docker.socket containerd || true
@@ -59,16 +74,6 @@ print_status $? "Docker repository set up successfully."
 echo "Installing Docker components..."
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || log_error "Failed to install Docker components."
 print_status $? "Docker components installed successfully."
-
-# Add the current user to the "docker" group
-echo "Adding the current user to the 'docker' group..."
-if groups $USER | grep -q "\bdocker\b"; then
-    print_status 0 "User is already in the 'docker' group. Skipping group addition."
-else
-    sudo usermod -aG docker $USER || log_error "Failed to add user to the Docker group."
-    print_status $? "User added to the 'docker' group successfully."
-    echo -e "\e[33m[INFO]\e[0m Please log out and log back in to apply group changes."
-fi
 
 # Install Docker rootless mode
 echo "Installing Docker rootless mode..."
