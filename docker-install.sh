@@ -46,6 +46,11 @@ sudo rm -rf /var/lib/docker /etc/docker || true
 sudo rm -rf ~/.docker || true
 print_status $? "Removed existing Docker installations and cleaned up configuration."
 
+# Step 0.2: Install required dependencies for rootless Docker
+echo "Installing required dependencies for rootless Docker..."
+sudo apt-get install -y slirp4netns fuse-overlayfs uidmap || log_error "Failed to install required dependencies."
+print_status $? "Required dependencies installed successfully."
+
 # Update and install prerequisites
 echo "Updating package database and installing prerequisites..."
 sudo apt-get update || log_error "Failed to update package database."
@@ -55,8 +60,7 @@ sudo apt-get install -y \
     curl \
     software-properties-common \
     gnupg \
-    lsb-release \
-    uidmap || log_error "Failed to install prerequisites."
+    lsb-release || log_error "Failed to install prerequisites."
 print_status $? "Prerequisites installed successfully."
 
 # Add Docker's official GPG key
