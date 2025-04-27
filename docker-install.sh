@@ -64,8 +64,20 @@ print_status $? "Docker components installed successfully."
 echo "Configuring Docker for rootless mode..."
 check_rootless_mode
 if [ $? -eq 1 ]; then
-    dockerd-rootless-setuptool.sh install || log_error "Failed to configure Docker rootless mode."
+    dockerd-rootless-setuptool.sh install || log_error "Failed to configure Docker in rootless mode."
     print_status $? "Docker configured for rootless mode."
+
+    # Export DOCKER_HOST for the current session
+    export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
+
+    # Persist DOCKER_HOST in shell configuration
+    if ! grep -q "export DOCKER_HOST=unix://\$XDG_RUNTIME_DIR/docker.sock" ~/.bashrc; then
+        echo 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> ~/.bashrc
+        echo "DOCKER_HOST variable has been added to ~/.bashrc for persistence."
+    fi
+
+    # Reload shell configuration
+    source ~/.bashrc || log_error "Failed to reload shell configuration."
 fi
 
 # Add the current user to the "docker" group
