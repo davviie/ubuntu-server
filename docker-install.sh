@@ -20,6 +20,8 @@ print_status() {
 echo "Stopping any existing Docker services..."
 sudo systemctl stop docker docker.socket containerd || true
 sudo systemctl disable docker docker.socket containerd || true
+sudo killall dockerd || true
+sudo rm -f /var/run/docker.sock || true
 print_status $? "Stopped and disabled existing Docker services."
 
 # Step 0.1: Remove any existing Docker installations
@@ -60,7 +62,7 @@ print_status $? "Docker components installed successfully."
 
 # Install Docker rootless mode
 echo "Installing Docker rootless mode..."
-curl -fsSL https://get.docker.com/rootless | sh || log_error "Failed to install Docker rootless mode."
+FORCE_ROOTLESS_INSTALL=1 curl -fsSL https://get.docker.com/rootless | sh || log_error "Failed to install Docker rootless mode."
 print_status $? "Docker rootless mode installed successfully."
 
 # Export DOCKER_HOST for the current session
